@@ -149,7 +149,7 @@ router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
         [Dijon_mob].[dbo].[Dates] D ON M.id_date = D.id_date
       WHERE
         (@selectedCapteurId IS NULL OR M.id_capteur = @selectedCapteurId)
-        AND CONVERT(DATE, D.FullDate) = @selectedDate
+        AND CONVERT(DATE, D.FullDate) IN (${selectedDatesArray.map(date => `@${date}`).join(',')})
       ORDER BY
         D.Hour,
         D.Minute;
