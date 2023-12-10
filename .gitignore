@@ -1,0 +1,53 @@
+# Modules installés localement
+node_modules/
+
+# Fichiers de dépendances
+package-lock.json
+npm-debug.log
+
+# Fichiers d'environnement
+.env
+
+# Logs et fichiers temporaires
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Fichiers générés en cours d'exécution
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Dossier de couverture de code pour les tests
+coverage/
+
+# Dossiers de configuration spécifiques à l'IDE
+.idea/
+.vscode/
+
+# Fichiers de configuration spécifiques à l'utilisateur
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Fichiers de sauvegarde de l'éditeur
+*~
+*.swp
+*.bak
+
+# Fichiers temporaires
+*.tmp
+
+# Fichiers de build
+build/
+
+# Fichiers de configuration personnalisée
+config.js
+
+# Dossiers de sauvegarde
+backups/
