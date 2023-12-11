@@ -149,7 +149,7 @@ router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
         [Dijon_mob].[dbo].[Dates] D ON M.id_date = D.id_date
       WHERE
         (@selectedCapteurId IS NULL OR M.id_capteur = @selectedCapteurId)
-        AND CONVERT(DATE, D.FullDate) IN (${selectedDatesArray.map(date => `@${date}`).join(',')})
+        AND CONVERT(DATE, D.FullDate) IN (${selectedDatesArray.map((date, index) => `@date${index}`).join(',')})
       ORDER BY
         D.Hour,
         D.Minute;
@@ -162,14 +162,15 @@ router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
 
     // If multiple sensors and dates are selected, call the same query multiple times and concatenate the results
     const resultsPromises = selectedCapteurIdsArray.map(async (selectedCapteurId) => {
-      const dashboardResult = await pool
-        .request()
-        .input('selectedCapteurId', selectedCapteurId)
-        .input('selectedDate', selectedDatesArray[0])  // Assuming the date is the same for all selectedCapteurIds
-        .query(adjustedQuery);
-
+      const inputParameters = selectedDatesArray.reduce((params, date, index) => {
+         return params.input(`date${index}`, sql.Date, date);
+      }, pool.request().input('selectedCapteurId', selectedCapteurId));
+   
+      const dashboardResult = await inputParameters.query(adjustedQuery);
+   
       return dashboardResult.recordsets;
-    });
+   });
+   
 
     // Wait for all promises to resolve and concatenate the results
     const allResults = await Promise.all(resultsPromises);
@@ -188,4 +189,3 @@ router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
 
 
 module.exports = router;
-
