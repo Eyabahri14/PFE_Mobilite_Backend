@@ -138,6 +138,7 @@ router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
     const query = `
       SELECT
         D.FullDate AS Date,
+        D.Day,
         D.Hour,
         D.Minute,
         D.Year,
