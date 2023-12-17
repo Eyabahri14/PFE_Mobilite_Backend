@@ -163,12 +163,19 @@ router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
 
     // If multiple sensors and Dates2 are selected, call the same query multiple times and concatenate the results
     const resultsPromises = selectedCapteurIdsArray.map(async (selectedCapteurId) => {
-      const inputParameters = selectedDates2Array.reduce((params, date, index) => {
-         return params.input(`date${index}`, sql.Date, date);
-      }, pool.request().input('selectedCapteurId', sql.Int, selectedCapteurId)); // Ensure it is an integer type
-   
-      const dashboardResult = await inputParameters.query(adjustedQuery);
-   
+      const inputParameters = pool.request();
+
+      // Add parameters for each date
+      selectedDates2Array.forEach((date, index) => {
+        inputParameters.input(`date${index}`, sql.Date, date);
+      });
+
+      const adjustedQuery = query.replace('@selectedCapteurId', selectedCapteurId.toString());
+
+      const dashboardResult = await inputParameters
+        .input('selectedCapteurId', sql.Int, selectedCapteurId)
+        .query(adjustedQuery);
+
       return dashboardResult.recordset;
     });
 
