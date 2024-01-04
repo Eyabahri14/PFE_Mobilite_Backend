@@ -2,11 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { sql, poolPromise } = require('../util/database');
 
-// GET all data from Db Mesure
 router.get('/data/mesure', async (req, res) => {
   try {
     const pool = await poolPromise;
-    const result = await pool.request().query('SELECT * FROM Mesure');
+    const result = await pool.request().query('SELECT * FROM mesure');
     res.json(result.recordset);
     console.log(result)
   } catch (err) {
@@ -14,18 +13,8 @@ router.get('/data/mesure', async (req, res) => {
   }
 });
 
-// GET all data from Db Capteur
-router.get('/data/Dates2', async (req, res) => {
-  try {
-    const pool = await poolPromise;
-    const result = await pool.request().query('SELECT * FROM Dates2');
-    res.json(result.recordset);
-  } catch (err) {
-    res.status(500).send('Error retrieving data');
-  }
-});
 
-// GET all data from Db Capteur
+
 router.get('/data/capteur', async (req, res) => {
   try {
     const pool = await poolPromise;
@@ -36,11 +25,10 @@ router.get('/data/capteur', async (req, res) => {
   }
 });
 
-// GET all data from Db Capteur
 router.get('/data/Dates', async (req, res) => {
   try {
     const pool = await poolPromise;
-    const result = await pool.request().query('SELECT * FROM Dates2');
+    const result = await pool.request().query('SELECT * FROM Dates2018');
     res.json(result.recordset);
   } catch (err) {
     res.status(500).send('Error retrieving data');
@@ -85,7 +73,6 @@ router.get('/data/Dates', async (req, res) => {
   }
 });
 */
-// GET data for dashboard
 /* router.get('/data/dashboard/:selectedDate/:selectedCapteurId', async (req, res) => {
   try {
     const { selectedDate, selectedCapteurId } = req.params;
@@ -131,37 +118,33 @@ router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
     const pool = await poolPromise;
     const selectedDates2Array = Array.isArray(selectedDates2) ? selectedDates2 : [selectedDates2];
 
-    // If there's only one selectedCapteurId, use it directly in the query
     const singleSelectedCapteurId = selectedCapteurIdsArray.length === 1 ? selectedCapteurIdsArray[0] : null;
 
-    // Adjust the query based on the presence of a singleSelectedCapteurId
+    // Adjust the query based on the new database and table names
     const query = `
       SELECT
         D.FullDate AS Date,
-        D.Day,
         D.Hour,
         D.Minute,
-        D.Year,
-        D.Month,
         M.valeur
       FROM
-        [Dijon_mob_last].[dbo].[Dates2] D
+        [2018DIJON].[dbo].[Dates2018] D
       INNER JOIN
-        [Dijon_mob_last].[dbo].[mesure] M ON D.ID = M.ID
+        [2018DIJON].[dbo].[mesure] M ON D.id_date = M.id_date
       WHERE
-        (@selectedCapteurId IS NULL OR M.ID = @selectedCapteurId)
+        (@selectedCapteurId IS NULL OR M.id_capteur = @selectedCapteurId)
         AND CONVERT(DATE, D.FullDate) IN (${selectedDates2Array.map((date, index) => `@date${index}`).join(',')})
       ORDER BY
         D.Hour,
         D.Minute;
     `;
 
-    // If singleSelectedCapteurId is not null, append the capteurId to the query
+    // Adjusted query for single or multiple capteurs
     const adjustedQuery = singleSelectedCapteurId
       ? query.replace('@selectedCapteurId', singleSelectedCapteurId.toString())
-      : query.replace('M.ID = @selectedCapteurId', '1=1');
+      : query.replace('M.id_capteur = @selectedCapteurId', '1=1');
 
-    // If multiple sensors and Dates2 are selected, call the same query multiple times and concatenate the results
+    // Execute the query for each selected capteur and date combination
     const resultsPromises = selectedCapteurIdsArray.map(async (selectedCapteurId) => {
       const inputParameters = pool.request();
 
@@ -170,8 +153,6 @@ router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
         inputParameters.input(`date${index}`, sql.Date, date);
       });
 
-      const adjustedQuery = query.replace('@selectedCapteurId', selectedCapteurId.toString());
-
       const dashboardResult = await inputParameters
         .input('selectedCapteurId', sql.Int, selectedCapteurId)
         .query(adjustedQuery);
@@ -179,10 +160,8 @@ router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
       return dashboardResult.recordset;
     });
 
-    // Wait for all promises to resolve and concatenate the results
+    // Combine the results from all promises
     const allResults = await Promise.all(resultsPromises);
-
-    // Concatenate the recordsets from each query into a single array
     const concatenatedResults = allResults.flat();
 
     res.json(concatenatedResults);
@@ -191,6 +170,7 @@ router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
     res.status(500).send('Error retrieving data for dashboard');
   }
 });
+
 
 
 

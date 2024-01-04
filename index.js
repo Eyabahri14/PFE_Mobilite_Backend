@@ -12,7 +12,7 @@ const config = {
         enableArithAbort: true, // Activer l'option arithabort
 
         // Si vous avez une base de données spécifique à sélectionner, ajoutez la propriété suivante :
-        database: 'PfeDb'
+        database: '2018DIJON'
     }
 };
 
