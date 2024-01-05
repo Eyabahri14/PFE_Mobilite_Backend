@@ -36,80 +36,6 @@ router.get('/data/Dates', async (req, res) => {
 });
 
 
-/* router.get('/data/tableau/:selectedDate/:selectedCapteurId', async (req, res) => {
-  try {
-    const { selectedDate, selectedCapteurId } = req.params; // Assurez-vous de récupérer ces valeurs de votre requête
-
-    const pool = await poolPromise;
-
-    // Requête pour le tableau
-    const tableauResult = await pool
-      .request()
-      .input('selectedDate', selectedDate)
-      .input('selectedCapteurId', selectedCapteurId)
-      .query(`
-        SELECT
-          C.Capteur,
-          M.valeur,
-          D.FullDate AS Date,
-          D.Hour,
-          D.Minute,
-          C.Station_point_de_depart,
-          C.Station_Direction
-        FROM
-          [Dijon_mob].[dbo].[Mesure] M
-        INNER JOIN
-          [Dijon_mob].[dbo].[Dates2] D ON M.id_date = D.id_date
-        INNER JOIN
-          [Dijon_mob].[dbo].[Capteur] C ON M.id_capteur = C.id_capteur
-        WHERE
-        CONVERT(DATE, D.FullDate) = @selectedDate AND M.id_capteur = @selectedCapteurId
-      `);
-
-    res.json(tableauResult.recordset);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error retrieving data for tableau');
-  }
-});
-*/
-/* router.get('/data/dashboard/:selectedDate/:selectedCapteurId', async (req, res) => {
-  try {
-    const { selectedDate, selectedCapteurId } = req.params;
-
-    const pool = await poolPromise;
-
-    const dashboardResult = await pool
-      .request()
-      .input('selectedDate', selectedDate)
-      .input('selectedCapteurId', selectedCapteurId)
-      .query(`
-            SELECT
-            D.FullDate AS Date,
-            D.Hour,
-            D.Minute,
-            D.Year,
-            D.Month,
-            M.valeur
-          FROM
-            [Dijon_mob].[dbo].[Mesure] M
-          INNER JOIN
-            [Dijon_mob].[dbo].[Dates2] D ON M.id_date = D.id_date
-          WHERE
-            CONVERT(DATE, D.FullDate) = @selectedDate AND M.id_capteur = @selectedCapteurId
-          ORDER BY
-            D.Hour,
-            D.Minute;
-      `);
-
-    res.json(dashboardResult.recordsets);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error retrieving data for dashboard');
-  }
-});
-
-*/
 router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
   try {
     let { selectedCapteurIds } = req.params;
@@ -215,6 +141,43 @@ router.get('/data/capteursParDate', async (req, res) => {
 });
 
 
+router.get('/data/tableau/:selectedCapteurIds', async (req, res) => {
+  try {
+    const selectedCapteurIdsArray = req.params.selectedCapteurIds.split(',').map(id => parseInt(id.trim(), 10));
+    const selectedDates = req.query.Dates2.split('&').map(date => date.trim());
+
+    const pool = await poolPromise;
+
+    const query = `
+      SELECT
+        C.Capteur,
+        M.valeur,
+        D.FullDate AS Date,
+        D.Hour,
+        D.Minute,
+        C.Station_point_de_depart,
+        C.Station_Direction
+      FROM
+        [2018DIJON].[dbo].[Capteur] C
+      INNER JOIN
+        [2018DIJON].[dbo].[mesure] M ON C.id_capteur = M.id_capteur
+      INNER JOIN
+        [2018DIJON].[dbo].[Dates2018] D ON M.id_date = D.id_date
+      WHERE
+        M.id_capteur IN (${selectedCapteurIdsArray.join(',')})
+        AND CONVERT(DATE, D.FullDate) IN (${selectedDates.map(date => `'${date}'`).join(',')})
+      ORDER BY
+        D.FullDate, D.Hour, D.Minute;
+    `;
+
+    const result = await pool.request().query(query);
+
+    res.json(result.recordset);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error retrieving data for tableau');
+  }
+});
 
 
 
