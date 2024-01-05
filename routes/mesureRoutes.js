@@ -175,7 +175,44 @@ router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
 });
 
 
+router.get('/data/capteursParDate', async (req, res) => {
+  try {
+    const dates = req.query.dates;
+    if (!dates) {
+      return res.status(400).send('No dates provided');
+    }
 
+    const dateList = dates.split('&').map(date => date.trim());
+    const pool = await poolPromise;
+
+    const query = `
+      SELECT
+        C.id_capteur,
+        C.Capteur,
+        C.Capteur_long,
+        C.Capteur_lat,
+        C.Station_point_de_depart,
+        C.Station_Direction,
+        M.valeur,
+        D.FullDate
+      FROM
+        [2018DIJON].[dbo].[Capteur] C
+      INNER JOIN
+        [2018DIJON].[dbo].[mesure] M ON C.id_capteur = M.id_capteur
+      INNER JOIN
+        [2018DIJON].[dbo].[Dates2018] D ON M.id_date = D.id_date
+      WHERE
+        CONVERT(DATE, D.FullDate) IN (${dateList.map(date => `'${date}'`).join(", ")})
+    `;
+
+    const result = await pool.request().query(query);
+
+    res.json(result.recordset);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error retrieving data');
+  }
+});
 
 
 
