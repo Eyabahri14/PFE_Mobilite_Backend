@@ -237,6 +237,53 @@ router.get('/data/weeklyData/:selectedCapteurIds', async (req, res) => {
 });
 
 
+router.get('/data/tableauWeekly/:selectedCapteurIds', async (req, res) => {
+  try {
+    let { selectedCapteurIds } = req.params;
+    const selectedCapteurIdsArray = selectedCapteurIds.split(',').map(id => parseInt(id.trim(), 10));
+    const selectedWeeks = req.query.weeks;
+    const selectedWeeksArray = selectedWeeks.split(',').map(week => parseInt(week.trim(), 10));
+
+    const pool = await poolPromise;
+
+    const query = `
+      SELECT
+        C.id_capteur AS Capteur,
+        SUM(M.valeur) AS SumValeur,
+        D.WeekNumber,
+        C.Station_point_de_depart,
+        C.Station_Direction
+      FROM
+        [2018DIJON].[dbo].[Capteur] C
+      INNER JOIN
+        [2018DIJON].[dbo].[mesure] M ON C.id_capteur = M.id_capteur
+      INNER JOIN
+        [2018DIJON].[dbo].[Dates2018] D ON M.id_date = D.id_date
+      WHERE
+        C.id_capteur IN (${selectedCapteurIdsArray.join(',')})
+        AND D.WeekNumber IN (${selectedWeeksArray.join(',')})
+      GROUP BY
+        C.id_capteur, D.WeekNumber, C.Station_point_de_depart, C.Station_Direction
+      ORDER BY
+        C.id_capteur, D.WeekNumber;
+    `;
+
+    const result = await pool.request().query(query);
+
+    const organizedResult = result.recordset.map(item => ({
+      capteur: item.Capteur,
+      sumValeur: item.SumValeur,
+      weekNumber: item.WeekNumber,
+      stationPointDeDepart: item.Station_point_de_depart,
+      stationDirection: item.Station_Direction
+    }));
+
+    res.json(organizedResult);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error retrieving weekly data for tableau');
+  }
+});
 
 
 module.exports = router;
