@@ -141,8 +141,6 @@ router.get('/data/capteursParDate', async (req, res) => {
 });
 
 
-
-
 router.get('/data/tableau/:selectedCapteurIds', async (req, res) => {
   try {
     const selectedCapteurIdsArray = req.params.selectedCapteurIds.split(',').map(id => parseInt(id.trim(), 10));
@@ -186,13 +184,17 @@ router.get('/data/weeklyData/:selectedCapteurIds', async (req, res) => {
   try {
     let { selectedCapteurIds } = req.params;
     const selectedCapteurIdsArray = selectedCapteurIds.split(',').map(id => parseInt(id.trim(), 10));
+    
+    // Vous pouvez recevoir une seule semaine ou plusieurs sous forme de chaîne séparée par des virgules
     const selectedWeeks = req.query.weeks;
+    const selectedWeeksArray = selectedWeeks.split(',').map(week => parseInt(week.trim(), 10));
+
     const pool = await poolPromise;
-    const selectedWeeksArray = Array.isArray(selectedWeeks) ? selectedWeeks : [selectedWeeks];
 
     const query = `
       SELECT
         M.id_capteur,
+        D.WeekNumber,
         DATENAME(WEEKDAY, D.id_date) AS DayOfWeek,
         SUM(M.valeur) as TotalValeur  
       FROM
@@ -203,9 +205,9 @@ router.get('/data/weeklyData/:selectedCapteurIds', async (req, res) => {
         M.id_capteur IN (${selectedCapteurIdsArray.join(',')})
         AND D.WeekNumber IN (${selectedWeeksArray.join(',')})
       GROUP BY
-        M.id_capteur, DATENAME(WEEKDAY, D.id_date)
-        ORDER BY
-        M.id_capteur,
+        M.id_capteur, D.WeekNumber, DATENAME(WEEKDAY, D.id_date)
+      ORDER BY
+        M.id_capteur, D.WeekNumber,
         CASE 
           WHEN DATENAME(WEEKDAY, D.id_date) = 'Monday' THEN 1
           WHEN DATENAME(WEEKDAY, D.id_date) = 'Tuesday' THEN 2
@@ -215,7 +217,6 @@ router.get('/data/weeklyData/:selectedCapteurIds', async (req, res) => {
           WHEN DATENAME(WEEKDAY, D.id_date) = 'Saturday' THEN 6
           WHEN DATENAME(WEEKDAY, D.id_date) = 'Sunday' THEN 7
         END;
-      
     `;
 
     const result = await pool.request().query(query);
@@ -223,6 +224,7 @@ router.get('/data/weeklyData/:selectedCapteurIds', async (req, res) => {
     // Organize the result into an array
     const organizedResult = result.recordset.map(item => ({
       id_capteur: item.id_capteur,
+      weekNumber: item.WeekNumber,
       dayOfWeek: item.DayOfWeek,
       totalValues: item.TotalValeur,
     }));
@@ -233,6 +235,8 @@ router.get('/data/weeklyData/:selectedCapteurIds', async (req, res) => {
     res.status(500).send('Error retrieving weekly data');
   }
 });
+
+
 
 
 module.exports = router;
