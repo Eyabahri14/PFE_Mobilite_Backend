@@ -141,6 +141,8 @@ router.get('/data/capteursParDate', async (req, res) => {
 });
 
 
+
+
 router.get('/data/tableau/:selectedCapteurIds', async (req, res) => {
   try {
     const selectedCapteurIdsArray = req.params.selectedCapteurIds.split(',').map(id => parseInt(id.trim(), 10));
@@ -179,6 +181,40 @@ router.get('/data/tableau/:selectedCapteurIds', async (req, res) => {
   }
 });
 
+router.get('/data/weeklyData/:selectedCapteurIds', async (req, res) => {
+  try {
+    let { selectedCapteurIds } = req.params;
+    const selectedCapteurIdsArray = selectedCapteurIds.split(',').map(id => parseInt(id.trim(), 10));
+    const selectedWeeks = req.query.weeks;
+    const pool = await poolPromise;
+    const selectedWeeksArray = Array.isArray(selectedWeeks) ? selectedWeeks : [selectedWeeks];
+
+    const query = `
+      SELECT
+        M.id_capteur,
+        D.WeekNumber,
+        SUM(M.valeur) as TotalValeur,
+        AVG(M.valeur) as AverageValeur
+      FROM
+        [2018DIJON].[dbo].[Dates2018] D
+      INNER JOIN
+        [2018DIJON].[dbo].[mesure] M ON D.id_date = M.id_date
+      WHERE
+        M.id_capteur IN (${selectedCapteurIdsArray.join(',')})
+        AND D.WeekNumber IN (${selectedWeeksArray.join(',')})
+      GROUP BY
+        M.id_capteur, D.WeekNumber
+      ORDER BY
+        M.id_capteur, D.WeekNumber;
+    `;
+
+    const result = await pool.request().query(query);
+    res.json(result.recordset);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error retrieving weekly data');
+  }
+});
 
 
 module.exports = router;
