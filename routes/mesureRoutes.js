@@ -181,6 +181,7 @@ router.get('/data/tableau/:selectedCapteurIds', async (req, res) => {
   }
 });
 
+
 router.get('/data/weeklyData/:selectedCapteurIds', async (req, res) => {
   try {
     let { selectedCapteurIds } = req.params;
@@ -192,9 +193,8 @@ router.get('/data/weeklyData/:selectedCapteurIds', async (req, res) => {
     const query = `
       SELECT
         M.id_capteur,
-        D.WeekNumber,
-        SUM(M.valeur) as TotalValeur,
-        AVG(M.valeur) as AverageValeur
+        DATENAME(WEEKDAY, D.id_date) AS DayOfWeek,
+        SUM(M.valeur) as TotalValeur  
       FROM
         [2018DIJON].[dbo].[Dates2018] D
       INNER JOIN
@@ -203,13 +203,31 @@ router.get('/data/weeklyData/:selectedCapteurIds', async (req, res) => {
         M.id_capteur IN (${selectedCapteurIdsArray.join(',')})
         AND D.WeekNumber IN (${selectedWeeksArray.join(',')})
       GROUP BY
-        M.id_capteur, D.WeekNumber
-      ORDER BY
-        M.id_capteur, D.WeekNumber;
+        M.id_capteur, DATENAME(WEEKDAY, D.id_date)
+        ORDER BY
+        M.id_capteur,
+        CASE 
+          WHEN DATENAME(WEEKDAY, D.id_date) = 'Monday' THEN 1
+          WHEN DATENAME(WEEKDAY, D.id_date) = 'Tuesday' THEN 2
+          WHEN DATENAME(WEEKDAY, D.id_date) = 'Wednesday' THEN 3
+          WHEN DATENAME(WEEKDAY, D.id_date) = 'Thursday' THEN 4
+          WHEN DATENAME(WEEKDAY, D.id_date) = 'Friday' THEN 5
+          WHEN DATENAME(WEEKDAY, D.id_date) = 'Saturday' THEN 6
+          WHEN DATENAME(WEEKDAY, D.id_date) = 'Sunday' THEN 7
+        END;
+      
     `;
 
     const result = await pool.request().query(query);
-    res.json(result.recordset);
+
+    // Organize the result into an array
+    const organizedResult = result.recordset.map(item => ({
+      id_capteur: item.id_capteur,
+      dayOfWeek: item.DayOfWeek,
+      totalValues: item.TotalValeur,
+    }));
+
+    res.json(organizedResult);
   } catch (err) {
     console.error(err);
     res.status(500).send('Error retrieving weekly data');
