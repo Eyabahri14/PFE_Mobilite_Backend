@@ -111,31 +111,30 @@ router.get('/data/capteursParDate', async (req, res) => {
     const pool = await poolPromise;
 
     const query = `
-      SELECT
-        C.id_capteur,
-        C.Capteur,
-        C.Capteur_long,
-        C.Capteur_lat,
-        C.Station_point_de_depart,
-        C.Station_Direction,
-        SUM(M.valeur) AS TotalValeur,
-        D.FullDate
-      FROM
-        [2018DIJON].[dbo].[Capteur] C
-      INNER JOIN
-        [2018DIJON].[dbo].[mesure] M ON C.id_capteur = M.id_capteur
-      INNER JOIN
-        [2018DIJON].[dbo].[Dates2018] D ON M.id_date = D.id_date
-      WHERE
-        CONVERT(DATE, D.FullDate) IN (${dateList.map(date => `'${date}'`).join(", ")})
-      GROUP BY
-        C.id_capteur,
-        C.Capteur,
-        C.Capteur_long,
-        C.Capteur_lat,
-        C.Station_point_de_depart,
-        C.Station_Direction,
-        D.FullDate
+    SELECT
+    C.id_capteur,
+    C.Capteur,
+    C.Capteur_long,
+    C.Capteur_lat,
+    C.Station_point_de_depart,
+    C.Station_Direction,
+    SUM(M.valeur) AS TotalValeur
+  FROM
+    [2018DIJON].[dbo].[Capteur] C
+  INNER JOIN
+    [2018DIJON].[dbo].[mesure] M ON C.id_capteur = M.id_capteur
+  INNER JOIN
+    [2018DIJON].[dbo].[Dates2018] D ON M.id_date = D.id_date
+  WHERE
+    CONVERT(DATE, D.FullDate) IN (${dateList.map(date => `'${date}'`).join(", ")})
+  GROUP BY
+    C.id_capteur,
+    C.Capteur,
+    C.Capteur_long,
+    C.Capteur_lat,
+    C.Station_point_de_depart,
+    C.Station_Direction
+  
     `;
 
     const result = await pool.request().query(query);
