@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { sql, poolPromise } = require('../util/database');
 
+
+
 router.get('/data/mesure', async (req, res) => {
   try {
     const pool = await poolPromise;
@@ -37,6 +39,7 @@ router.get('/data/Dates', async (req, res) => {
 
 
 router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
+
   try {
     let { selectedCapteurIds } = req.params;
     const selectedCapteurIdsArray = selectedCapteurIds.split(',').map(id => parseInt(id.trim(), 10));
@@ -46,7 +49,6 @@ router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
 
     const singleSelectedCapteurId = selectedCapteurIdsArray.length === 1 ? selectedCapteurIdsArray[0] : null;
 
-    // Adjust the query based on the new database and table names
     const query = `
       SELECT
         D.FullDate AS Date,
@@ -68,16 +70,13 @@ router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
         D.Minute;
     `;
 
-    // Adjusted query for single or multiple capteurs
     const adjustedQuery = singleSelectedCapteurId
       ? query.replace('@selectedCapteurId', singleSelectedCapteurId.toString())
       : query.replace('M.id_capteur = @selectedCapteurId', '1=1');
 
-    // Execute the query for each selected capteur and date combination
     const resultsPromises = selectedCapteurIdsArray.map(async (selectedCapteurId) => {
       const inputParameters = pool.request();
 
-      // Add parameters for each date
       selectedDates2Array.forEach((date, index) => {
         inputParameters.input(`date${index}`, sql.Date, date);
       });
@@ -89,7 +88,6 @@ router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
       return dashboardResult.recordset;
     });
 
-    // Combine the results from all promises
     const allResults = await Promise.all(resultsPromises);
     const concatenatedResults = allResults.flat();
 
@@ -100,7 +98,7 @@ router.get('/data/dashboard/:selectedCapteurIds', async (req, res) => {
   }
 });
 
-
+//A MODIFIER 
 router.get('/data/capteursParDate', async (req, res) => {
   try {
     const dates = req.query.dates;
@@ -108,7 +106,8 @@ router.get('/data/capteursParDate', async (req, res) => {
       return res.status(400).send('No dates provided');
     }
 
-    const dateList = dates.split('&').map(date => date.trim());
+    // Splitting dates by comma
+    const dateList = dates.split(',').map(date => date.trim());
     const pool = await poolPromise;
 
     const query = `
@@ -119,7 +118,7 @@ router.get('/data/capteursParDate', async (req, res) => {
         C.Capteur_lat,
         C.Station_point_de_depart,
         C.Station_Direction,
-        M.valeur,
+        SUM(M.valeur) AS TotalValeur,
         D.FullDate
       FROM
         [2018DIJON].[dbo].[Capteur] C
@@ -129,6 +128,14 @@ router.get('/data/capteursParDate', async (req, res) => {
         [2018DIJON].[dbo].[Dates2018] D ON M.id_date = D.id_date
       WHERE
         CONVERT(DATE, D.FullDate) IN (${dateList.map(date => `'${date}'`).join(", ")})
+      GROUP BY
+        C.id_capteur,
+        C.Capteur,
+        C.Capteur_long,
+        C.Capteur_lat,
+        C.Station_point_de_depart,
+        C.Station_Direction,
+        D.FullDate
     `;
 
     const result = await pool.request().query(query);
@@ -139,6 +146,8 @@ router.get('/data/capteursParDate', async (req, res) => {
     res.status(500).send('Error retrieving data');
   }
 });
+
+
 
 
 router.get('/data/tableau/:selectedCapteurIds', async (req, res) => {
@@ -185,7 +194,6 @@ router.get('/data/weeklyData/:selectedCapteurIds', async (req, res) => {
     let { selectedCapteurIds } = req.params;
     const selectedCapteurIdsArray = selectedCapteurIds.split(',').map(id => parseInt(id.trim(), 10));
     
-    // Vous pouvez recevoir une seule semaine ou plusieurs sous forme de chaîne séparée par des virgules
     const selectedWeeks = req.query.weeks;
     const selectedWeeksArray = selectedWeeks.split(',').map(week => parseInt(week.trim(), 10));
 
@@ -221,7 +229,6 @@ router.get('/data/weeklyData/:selectedCapteurIds', async (req, res) => {
 
     const result = await pool.request().query(query);
 
-    // Organize the result into an array
     const organizedResult = result.recordset.map(item => ({
       id_capteur: item.id_capteur,
       weekNumber: item.WeekNumber,
