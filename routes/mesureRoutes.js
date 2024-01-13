@@ -291,5 +291,83 @@ router.get('/data/tableauWeekly/:selectedCapteurIds', async (req, res) => {
   }
 });
 
+// Requete du TMJM
+router.get('/data/TMJM/:annee/:idCapteur', async (req, res) => {
+  try {
+    const { annee, idCapteur } = req.params;
+    const pool = await poolPromise;
+    const query = `
+      SELECT
+        C.id_capteur,
+        YEAR(CONVERT(DATE, D.FullDate)) AS Annee,
+        MONTH(CONVERT(DATE, D.FullDate)) AS Mois,
+        SUM(M.valeur) AS MoyenneMensuelle
+      FROM
+        Capteur C
+      INNER JOIN
+        mesure M ON C.id_capteur = M.id_capteur
+      INNER JOIN
+        Dates2018 D ON M.id_date = D.id_date
+      WHERE
+        YEAR(CONVERT(DATE, D.FullDate)) = @annee
+        AND C.id_capteur = @idCapteur
+      GROUP BY
+        C.id_capteur,
+        YEAR(CONVERT(DATE, D.FullDate)),
+        MONTH(CONVERT(DATE, D.FullDate));
+    `;
+    const result = await pool.request()
+      .input('annee', sql.Int, annee)
+      .input('idCapteur', sql.Int, idCapteur)
+      .query(query);
+      console.log(`Année: ${annee}, ID Capteur: ${idCapteur}`);
+
+    res.json(result.recordset);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error retrieving TMJM data');
+  }
+});
+
+// Requete du TMJO
+router.get('/data/TMJO/:annee/:idCapteur', async (req, res) => {
+  try {
+    const { annee, idCapteur } = req.params;
+    const pool = await poolPromise;
+    const query = `
+      SELECT
+        C.id_capteur,
+        YEAR(CONVERT(DATE, D.FullDate)) AS Annee,
+        MONTH(CONVERT(DATE, D.FullDate)) AS Mois,
+        SUM(M.valeur) AS MoyenneMensuelle
+      FROM
+        Capteur C
+      INNER JOIN
+        mesure M ON C.id_capteur = M.id_capteur
+      INNER JOIN
+        Dates2018 D ON M.id_date = D.id_date
+      WHERE
+        YEAR(CONVERT(DATE, D.FullDate)) = @annee
+        AND C.id_capteur = @idCapteur
+        AND [jour ferié] = 0
+        AND [DayOfWeek] NOT IN ('Saturday', 'Sunday')
+      GROUP BY
+        C.id_capteur,
+        YEAR(CONVERT(DATE, D.FullDate)),
+        MONTH(CONVERT(DATE, D.FullDate));
+    `;
+    const result = await pool.request()
+      .input('annee', sql.Int, annee)
+      .input('idCapteur', sql.Int, idCapteur)
+      .query(query);
+
+    res.json(result.recordset);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error retrieving TMJO data');
+  }
+});
+
+
 
 module.exports = router;

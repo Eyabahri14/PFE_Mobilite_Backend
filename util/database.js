@@ -13,7 +13,7 @@ const config = {
     encrypt: encrypt,
     trustServerCertificate: certificate,
     enableArithAbort: true,
-    database: 'Dijon_mob_last'
+    database: '2018DIJON'
   }
 };
 
