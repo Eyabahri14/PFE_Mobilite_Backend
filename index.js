@@ -6,12 +6,10 @@ const config = {
     user: 'eyabh',
     password: '191JFT4899',
     options: {
-        trustedConnection: false, // Utilisation de la connexion via nom d'utilisateur et mot de passe
-        encrypt: false, // Désactiver le chiffrement si non requis
-        trustServerCertificate: false, // Ne pas faire confiance au certificat du serveur
-        enableArithAbort: true, // Activer l'option arithabort
-
-        // Si vous avez une base de données spécifique à sélectionner, ajoutez la propriété suivante :
+        trustedConnection: false, 
+        encrypt: false, 
+        trustServerCertificate: false, 
+        enableArithAbort: true, 
         database: '2018DIJON'
     }
 };

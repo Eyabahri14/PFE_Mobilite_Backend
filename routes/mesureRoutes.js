@@ -291,7 +291,6 @@ router.get('/data/tableauWeekly/:selectedCapteurIds', async (req, res) => {
   }
 });
 
-// Requete du TMJM
 router.get('/data/TMJM/:annee/:idCapteur', async (req, res) => {
   try {
     const { annee, idCapteur } = req.params;
@@ -329,7 +328,6 @@ router.get('/data/TMJM/:annee/:idCapteur', async (req, res) => {
   }
 });
 
-// Requete du TMJO
 router.get('/data/TMJO/:annee/:idCapteur', async (req, res) => {
   try {
     const { annee, idCapteur } = req.params;
