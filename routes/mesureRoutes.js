@@ -300,7 +300,7 @@ router.get('/data/TMJM/:annee/:idCapteur', async (req, res) => {
         C.id_capteur,
         YEAR(CONVERT(DATE, D.FullDate)) AS Annee,
         MONTH(CONVERT(DATE, D.FullDate)) AS Mois,
-        SUM(M.valeur) AS MoyenneMensuelle
+        SUM(M.valeur)/COUNT(DISTINCT D.FullDate) AS MoyenneMensuelle
       FROM
         Capteur C
       INNER JOIN
@@ -337,7 +337,7 @@ router.get('/data/TMJO/:annee/:idCapteur', async (req, res) => {
         C.id_capteur,
         YEAR(CONVERT(DATE, D.FullDate)) AS Annee,
         MONTH(CONVERT(DATE, D.FullDate)) AS Mois,
-        SUM(M.valeur) AS MoyenneMensuelle
+        SUM(M.valeur) / COUNT(DISTINCT D.FullDate) AS MoyenneMensuelle
       FROM
         Capteur C
       INNER JOIN
